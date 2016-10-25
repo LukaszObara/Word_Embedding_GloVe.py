@@ -6,10 +6,10 @@ import itertools
 import re
 
 # Third Party Library
-import matplotlib.pyplot as plt
-import nltk
 import numpy as np
 from scipy import sparse
+import theano
+import theano.tensor as T
 
 def cooccur_matrix(corpus, window_size=7, min_count=None):
 	"""Takes the corpus and creates a list where each entry is the word
@@ -20,19 +20,19 @@ def cooccur_matrix(corpus, window_size=7, min_count=None):
 	context window around each word which is used to generate a 
 	cooccurance matrix.
 	"""
-
+	
 	vocab = corpus.split() 
 	vocab = [element.lower() for element in vocab]
 	tokens = list(set(vocab)) # Gets the unique words in the corpus
 	token_size = len(tokens)
 
 	cooccurrences = sparse.coo_matrix((len(tokens)+1, len(tokens)+1), 
-									  dtype=np.float32)
+					   dtype=theano.config.floatX)
 
 	word_to_index = {words: i for i, words in enumerate(tokens)}
 	# index_to_word = {index: word for word, index in word_to_index.items()}
 
-	# Creates a window around each word
+	# Creates a window centered around each word
 	win = 2 * window_size + 1
 	l = list(map(lambda x: word_to_index[x], vocab))
 	lpadded = win // 2 * [token_size] + l + win // 2 * [token_size] 
@@ -47,7 +47,7 @@ def cooccur_matrix(corpus, window_size=7, min_count=None):
 		d = np.ones((win-1,)) 
 
 		sparse_temp = sparse.coo_matrix((d, (r, c)), 
-										shape=(len(tokens)+1, len(tokens)+1))
+						shape=(len(tokens)+1, len(tokens)+1))
 
 		cooccurrences += sparse_temp
 
@@ -74,5 +74,5 @@ def cooccur_matrix(corpus, window_size=7, min_count=None):
 	return cooccurrences
 
 if __name__ == '__main__':
-	file = 'C:\\Users\\lukas\\Documents\\NLP\\Word_Embedding\\Basketball_test.txt'
+	file = '...\\test.txt'
 	text = open(file, 'r').read()
