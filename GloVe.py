@@ -77,3 +77,4 @@ def cooccur_matrix(corpus, window_size=7, min_count=None):
 if __name__ == '__main__':
 	file = '...\\test.txt'
 	text = open(file, 'r').read()
+	cooccur_matrix(text)
