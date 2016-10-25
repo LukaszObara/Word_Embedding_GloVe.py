@@ -47,7 +47,8 @@ def cooccur_matrix(corpus, window_size=7, min_count=None):
 		d = np.ones((win-1,)) 
 
 		sparse_temp = sparse.coo_matrix((d, (r, c)), 
-						shape=(len(tokens)+1, len(tokens)+1))
+						shape=(len(tokens)+1, len(tokens)+1),
+					        dtype=theano.config.floatX)
 
 		cooccurrences += sparse_temp
 
