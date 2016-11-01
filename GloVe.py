@@ -54,10 +54,6 @@ def cooccur_matrix(corpus, window_size=7, min_count=None):
 
 	cooccurrences = cooccurrences[:-1, :-1] # Removes the padding row and column
 
-	# If `min_count` is not `None` and `min_count` > 0 then we will 
-	# remove the instance of that word from the `cooccurrences` matrix.
-	# Since the cooccurrence matrix is symmetric then the row and column
-	# contaning that word will be removed. 
 
 	# TODO remove instance of that word from dictionary when the row and
 	#	   column are removed. 
@@ -74,7 +70,58 @@ def cooccur_matrix(corpus, window_size=7, min_count=None):
 
 	return cooccurrences
 
+def train(cooc_matrix, x_max=3, alpha=0.75, learning_rate=0.05):
+	values = list(cooc_matrix.data)
+
+	cooc_matrix = np.transpose(np.nonzero(cooc_matrix))
+	main_row = cooc_matrix[:, 0]
+	context_row = cooc_matrix[:, 1]
+
+	main_matrix = np.zeros((cooc_matrix.shape[0], cooc_matrix.shape[1]+1))
+	main_matrix[:, 0] = main_row
+	main_matrix[:, 1] = context_row
+	main_matrix[:, 2] = values
+
+	del(cooc_matrix)
+
+	word_count = len(word_to_vec)
+	vector_sums = np.zeros((2*word_count, word_to_vec[0][0].shape[0]+1)) # upper-half of matrix is main, lower_half is context
+	total_cost = 0
+
+	for tuples in main_matrix:
+		weight = (tuples[2]/x_max)**alpha if tuples[2] < x_max else 1
+		main = int(tuples[0])
+		context = int(tuples[1])
+
+		inner_cost = np.dot(word_to_vec[main][0], word_to_vec[context][1])\
+				   + word_to_vec[main][2] + word_to_vec[context][3]\
+				   - np.log(tuples[2])
+		total_cost += 0.5 * weight * inner_cost**2
+
+		# Fills the vector_sums matrix with the sums in relation to the
+		# main and context word. `vector_sums` will then be used in the 
+		# gradient to compute SGD. 
+		vector_sums[main, :-1] += weight * inner_cost * word_to_vec[context][1]
+		vector_sums[context+word_count, :-1] += weight * inner_cost *\
+										   		word_to_vec[main][0]
+		vector_sums[main, -1] += weight * inner_cost * word_to_vec[context][3]				   		
+		vector_sums[context+word_count, -1] += weight * inner_cost *\
+											   word_to_vec[main][2]
+
+
+	# TODO Change SGD to use RMSPROP
+	# Vanilla Gradient Descent
+	for i in range(word_count):
+		word_to_vec[i][0] =- learning_rate * vector_sums[i, 0:3]
+		word_to_vec[i][1] =- learning_rate * vector_sums[i+word_count, 0:3]
+		word_to_vec[i][2] =- learning_rate * vector_sums[i, 3]
+		word_to_vec[i][3] =- learning_rate * vector_sums[i+word_count, 3]
+
+
 if __name__ == '__main__':
 	file = '...\\test.txt'
 	text = open(file, 'r').read()
-	cooccur_matrix(text)
+
+	temp = cooccur_matrix(text)
+	train(temp)
+
