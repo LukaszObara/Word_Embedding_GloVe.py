@@ -85,8 +85,8 @@ class GloVe(object):
 
 		return cooccurrences
 
-	def train(self, epochs=50, x_max=100, alpha=0.75, learning_rate=0.0001, 
-			  decay_rate=0.9, eps=0.00001):		
+	def train(self, epochs=4, x_max=3, alpha=0.75, learning_rate=0.0001, 
+			  decay_rate=0.9, annealing_rate=0.0, eps=0.00001):		
 
 		coocur_matrix= self.cooccur_matrix()
 
@@ -126,7 +126,9 @@ class GloVe(object):
 									   * self.word_to_vec[context][3]				   		
 				vector_sums[context+self.token_size, -1] += weight * inner_cost\
 													 * self.word_to_vec[main][2]
-			print(total_cost)
+
+			eta = np.exp(-annealing_rate * i)
+
 			# Backward Pass
 			for i in range(self.token_size):
 				# Main vector cache
@@ -153,17 +155,21 @@ class GloVe(object):
 
 				# Updates the word vectors and biases
 				# Main word vector
-				self.word_to_vec[i][0] =- learning_rate * vector_sums[i, :-1]\
-								  / np.sqrt(self.cache_matrix[i, :-1]+eps)
+				self.word_to_vec[i][0] =- eta * learning_rate\
+										* vector_sums[i, :-1]\
+								  		/ np.sqrt(self.cache_matrix[i, :-1]+eps)
 				# Context word vector
-				self.word_to_vec[i][1] =- learning_rate * vector_sums[i+self.token_size, :-1]\
-								  / np.sqrt(self.cache_matrix[i+self.token_size, :-1]+eps)
+				self.word_to_vec[i][1] =- eta * learning_rate\
+										* vector_sums[i+self.token_size, :-1]\
+								 		/ np.sqrt(self.cache_matrix[i+self.token_size, :-1]+eps)
 				# Main word bias
-				self.word_to_vec[i][2] =- learning_rate * vector_sums[i, -1]\
-								  / np.sqrt(self.cache_matrix[i, -1]+eps)
+				self.word_to_vec[i][2] =- eta * learning_rate\
+										* vector_sums[i, -1]\
+										/ np.sqrt(self.cache_matrix[i, -1]+eps)
 				# Context word bias
-				self.word_to_vec[i][3] =- learning_rate * vector_sums[i+self.token_size, -1]\
-								  / np.sqrt(self.cache_matrix[i+self.token_size, -1]+eps)
+				self.word_to_vec[i][3] =- eta * learning_rate\
+										* vector_sums[i+self.token_size, -1]\
+								  		/ np.sqrt(self.cache_matrix[i+self.token_size, -1]+eps)
 
 	def save(self, filename_labels, filename_vectors):
 		"""
@@ -184,7 +190,7 @@ class GloVe(object):
 def main():
 	import matplotlib.pyplot as plt
 
-	file = 'C:\\...\\test.txt'
+	file = 'C:\\Users\\lukas\\Documents\\NLP\\Word_Embedding\\test.txt'
 	text = open(file, 'r').read()
 
 	temp = GloVe(text)
@@ -198,7 +204,6 @@ def main():
 
 	word_to_index = temp.word_to_index
 	labels = [word for word, _ in word_to_index.items()]
-	print(labels)
 
 	plt.figure(figsize=(30, 20))
 
@@ -210,5 +215,5 @@ def main():
 	plt.show()
 
 if __name__ == '__main__':
-	pass
-	# main()
+	# pass
+	main()
